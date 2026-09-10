@@ -3,7 +3,9 @@
 set -e
 
 SRC="$(cd "$(dirname "$0")" && pwd)"
-DEST="${HOME}/.workbuddy/skills"
+# 默认装到 WorkBuddy 的技能目录，可用环境变量覆盖（方便测试或装到别处）：
+#   SKILLS_DIR=/tmp/test ./install.sh
+DEST="${SKILLS_DIR:-${HOME}/.workbuddy/skills}"
 
 list_skills() {
   # 顶层目录里含 SKILL.md 的，才算一个技能
