@@ -1,0 +1,9 @@
+.DS_Store
+
+# ── 使用者填写过的私人资料，不进仓库 ──
+# 已配置标记（出现即代表这个副本被私人化过）
+**/user/.onboarded
+
+# 存档目录只保留占位说明，不上传实际文案
+**/user/archive/*
+!**/user/archive/README.md
