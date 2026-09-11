@@ -1,0 +1,339 @@
+/* ---------------------------------------------------------------
+   推文 → 小红书图片笔记 · 卡片样式
+   画布固定 1080 × 1440（3:4）。改这里就能改风格，不用动脚本。
+   三套主题：ink（极简编辑风·默认） / glass（液态玻璃） / bold（高饱和撞色）
+   --------------------------------------------------------------- */
+
+:root{
+  --pad-x: 88px;
+  --pad-t: 76px;
+  --pad-b: 56px;
+  --font: -apple-system, BlinkMacSystemFont, "PingFang SC", "Noto Sans SC",
+          "Microsoft YaHei", "Hiragino Sans GB", sans-serif;
+  --mono: ui-monospace, "SF Mono", "JetBrains Mono", Menlo, monospace;
+}
+
+* { box-sizing: border-box; margin: 0; padding: 0; }
+
+html, body{
+  width: 1080px;
+  height: 1440px;
+  overflow: hidden;
+}
+
+body{
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  width: 1080px;
+  height: 1440px;
+  padding: var(--pad-t) var(--pad-x) var(--pad-b);
+  font-family: var(--font);
+  color: var(--fg);
+  background: var(--bg);
+  -webkit-font-smoothing: antialiased;
+  text-rendering: optimizeLegibility;
+}
+
+body > * { position: relative; z-index: 1; }
+
+/* ============ 主题 ============ */
+
+/* 1. ink —— 暖白纸感 + 砖红点缀，最稳的编辑风 */
+body.theme-ink{
+  --bg: #F7F5F1;
+  --fg: #16181D;
+  --muted: #6B6F76;
+  --accent: #C1440E;
+  --hair: rgba(0,0,0,.12);
+  --panel: transparent;
+  --chip-bg: rgba(0,0,0,.03);
+}
+
+/* 2. glass —— 液态玻璃：柔光渐变 + 半透明面板 */
+body.theme-glass{
+  --bg: linear-gradient(158deg, #EEF2FF 0%, #F6F2FF 46%, #FDF2F8 100%);
+  --fg: #10131A;
+  --muted: #5A6172;
+  --accent: #5B5BD6;
+  --hair: rgba(255,255,255,.65);
+  --panel: rgba(255,255,255,.55);
+  --chip-bg: rgba(255,255,255,.5);
+}
+body.theme-glass::before,
+body.theme-glass::after{
+  content: ""; position: absolute; border-radius: 50%;
+  filter: blur(70px); opacity: .55; z-index: 0;
+}
+body.theme-glass::before{ width: 640px; height: 640px; background: #8EA2FF; top: -140px; left: -160px; }
+body.theme-glass::after { width: 580px; height: 580px; background: #FFB3D1; bottom: -170px; right: -130px; }
+
+/* 3. bold —— 深色底 + 荧光撞色，爆款吸睛 */
+body.theme-bold{
+  --bg: #0E0F13;
+  --fg: #FFFFFF;
+  --muted: #A7ACB8;
+  --accent: #D6FF3F;
+  --hair: rgba(255,255,255,.18);
+  --panel: rgba(255,255,255,.06);
+  --chip-bg: rgba(255,255,255,.08);
+}
+
+/* 自定义主色：--accent 可在 spec 里覆盖 */
+body{ --accent-override: var(--accent); }
+
+/* ============ 通用结构 ============ */
+
+.pg-head{
+  flex: 0 0 auto;
+  display: flex; align-items: center; justify-content: space-between;
+  margin-bottom: 40px;
+}
+.kicker{
+  font-family: var(--mono);
+  font-size: 26px; letter-spacing: .16em;
+  color: var(--accent); font-weight: 600;
+}
+.pageno{
+  font-family: var(--mono);
+  font-size: 24px; letter-spacing: .1em; color: var(--muted);
+}
+
+.stage{
+  flex: 1 1 auto;
+  min-height: 0;
+  display: flex; flex-direction: column;
+  overflow: hidden;
+}
+
+/* 玻璃 / 撞色主题给内容区加一块面板 */
+body.theme-glass .stage,
+body.theme-bold .stage{
+  background: var(--panel);
+  border: 1px solid var(--hair);
+  border-radius: 40px;
+  padding: 64px 56px;
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
+  box-shadow: 0 28px 70px rgba(16,19,26,.10), inset 0 1px 0 rgba(255,255,255,.55);
+}
+
+.pg-foot{
+  flex: 0 0 auto;
+  display: flex; align-items: center; justify-content: space-between;
+  margin-top: 34px; padding-top: 26px;
+  border-top: 1px solid var(--hair);
+  font-size: 24px; color: var(--muted);
+}
+
+.push-bottom{ margin-top: auto; }
+.center{ justify-content: center; align-items: center; text-align: center; }
+
+/* 内容不足一屏时，让主体在纵向居中，避免底部一大块空 */
+.mid{
+  flex: 1 1 auto;
+  min-height: 0;
+  display: flex; flex-direction: column;
+  justify-content: center;
+}
+
+/* ============ 封面 ============ */
+
+.cover-title{
+  font-size: 132px; font-weight: 800;
+  line-height: 1.14; letter-spacing: -.02em;
+}
+.cover-sub{
+  margin-top: 36px;
+  font-size: 40px; font-weight: 400; line-height: 1.62;
+  color: var(--muted); max-width: 92%;
+}
+.cover-rule{
+  width: 132px; height: 8px; border-radius: 8px;
+  background: var(--accent); margin-top: 44px;
+}
+/* 封面底部通栏图。
+   必须 flex:0 0 auto —— 一旦允许收缩，它会偷偷压掉自己的高度把溢出藏起来，
+   外层 .stage 就检测不到溢出、字号自适应永不触发，标题被裁。 */
+.cover-img{
+  margin-top: auto;
+  flex: 0 0 auto;
+  display: block;
+  width: 100%;
+  max-height: 420px;
+  object-fit: cover;
+  border-radius: 28px;
+  box-shadow: 0 20px 50px rgba(16,19,26,.16);
+}
+
+/* ============ 正文页 ============ */
+
+.idx{
+  font-size: 116px; font-weight: 800; line-height: 1;
+  letter-spacing: -.04em; color: var(--accent);
+  margin-bottom: 22px;
+}
+.card-title{
+  font-size: 76px; font-weight: 800; line-height: 1.22;
+  letter-spacing: -.01em;
+}
+ul.points{
+  list-style: none; margin-top: 44px;
+  display: flex; flex-direction: column; gap: 34px;
+}
+ul.points li{
+  display: flex; gap: 26px; align-items: flex-start;
+  font-size: 42px; font-weight: 500; line-height: 1.66;
+}
+ul.points li::before{
+  content: ""; flex: 0 0 auto;
+  width: 16px; height: 16px; border-radius: 50%;
+  background: var(--accent); margin-top: .52em;
+}
+.note{
+  margin-top: auto; padding-top: 40px;
+  font-size: 30px; line-height: 1.6; color: var(--muted);
+  border-left: 5px solid var(--accent); padding-left: 24px;
+}
+
+/* ============ 金句页 ============ */
+
+.quote-mark{
+  font-family: Georgia, "Times New Roman", "Songti SC", serif;
+  font-size: 190px; line-height: .72; font-weight: 700;
+  color: var(--accent); margin-bottom: 24px;
+}
+.quote{
+  font-size: 72px; font-weight: 700; line-height: 1.48;
+  letter-spacing: -.01em;
+}
+.by{
+  margin-top: 40px; font-size: 28px; color: var(--muted);
+}
+
+/* ============ 数据页 ============ */
+
+.stat-grid{
+  display: grid; grid-template-columns: repeat(2, 1fr);
+  gap: 56px 40px; width: 100%;
+}
+.stat-num{
+  font-size: 128px; font-weight: 800; line-height: 1;
+  letter-spacing: -.03em; color: var(--accent);
+}
+.stat-lab{
+  margin-top: 18px; font-size: 32px; font-weight: 500; color: var(--muted);
+}
+
+/* ============ 结尾页 ============ */
+
+/* 收尾标题在剩余空间里垂直居中，插画贴底 —— 有图没图都用这一套，
+   没图时 endbox 自动占满整页，视觉与旧版一致。 */
+.endbox{
+  flex: 1 1 auto; min-height: 0;
+  display: flex; flex-direction: column;
+  justify-content: center; align-items: center; text-align: center;
+}
+
+.end-title{
+  font-size: 92px; font-weight: 800; line-height: 1.26;
+  letter-spacing: -.015em;
+}
+
+/* ============ 图片卡 ============ */
+
+.imgcard{
+  flex: 1 1 auto;
+  min-height: 0;
+  display: flex; flex-direction: column;
+  gap: 44px;
+}
+.imgcard .photo-box{
+  flex: 1 1 auto;
+  min-height: 200px;
+  display: flex; align-items: center; justify-content: center;
+}
+.imgcard .photo-box img{
+  max-width: 100%; max-height: 100%;
+  border-radius: 32px;
+  box-shadow: 0 20px 50px rgba(16,19,26,.16);
+}
+/* 只放图：取消最小高度，让图占满整页 */
+.imgcard.imgonly{ gap: 0; }
+.imgcard.imgonly .photo-box{ min-height: 0; }
+
+/* 关键：文字块不许自己收缩。否则它会偷偷压掉自己的高度，
+   外层 stage 检测不到溢出，字号自适应就永远不触发，文字被裁掉。 */
+.textbox{ flex: 0 0 auto; }
+.img-points{ margin-top: 30px; gap: 22px; }
+.img-points li{ font-size: 34px; line-height: 1.6; }
+.img-caption{
+  margin-top: 26px;
+  font-size: 30px; line-height: 1.55; color: var(--muted);
+}
+/* 图片卡里的标题在文字块顶部，不需要额外下边距 */
+.textbox .card-title{ margin-bottom: 0; }
+
+/* ============ 场景卡：底图 + 产品图叠放 ============ */
+
+.productcard{
+  flex: 1 1 auto; min-height: 0;
+  display: flex; flex-direction: column; gap: 40px;
+}
+
+/* 拼贴区。
+   ★ min-height 是必需的兜底：底图/产品图都是绝对定位、不计入 scrollHeight，
+   如果这里允许被压缩到 0，长标题会把整个拼贴挤没，而 overflow 检测又抓不到。 */
+.collage{
+  position: relative;
+  flex: 1 1 auto;
+  min-height: 420px;
+  overflow: hidden;
+  border-radius: 32px;
+}
+.base-img{
+  position: absolute; inset: 0;
+  width: 100%; height: 100%;
+  object-fit: cover;
+  z-index: 1;
+}
+/* 产品图：RGBA 透明底"漂浮罐体"，底边锚定在底图下缘 ——
+   产品图自身的罐底在原图里就是被裁的，底边对齐正好把切口藏进画面边界。 */
+.prod-img{
+  position: absolute; z-index: 2;
+  bottom: 0;
+  right: var(--px, 4%); left: auto;
+  width: var(--pw, 34%);
+  max-height: 100%;
+  object-fit: contain;
+  filter: drop-shadow(0 0 1px rgba(0,0,0,.45))
+          drop-shadow(0 20px 34px rgba(0,0,0,.32));
+}
+.productcard.left .prod-img{ right: auto; left: var(--px, 4%); }
+
+/* 竖版底图用 contain：改为中心圆角卡片，避免 cover 重裁掉主体。
+   关键：拼贴区必须收缩到图片本身的宽度（width:fit-content），
+   否则产品图的百分比锚点是相对"含留白的拼贴区"算的，
+   罐体会溢出插画边界、浮在页面空白上，看起来像贴歪了。 */
+.productcard.base-contain .collage{
+  overflow: visible;
+  background: transparent;
+  width: fit-content;
+  max-width: 100%;
+  align-self: center;
+}
+.productcard.base-contain .base-img{
+  position: relative; inset: auto;
+  margin: 0 auto;
+  width: auto; height: 100%; max-width: 100%;
+  border-radius: 32px;
+}
+
+/* ============ 结尾页漂浮插画 ============ */
+
+.end-float{
+  flex: 0 0 auto;
+  max-height: 56%;
+  object-fit: contain;
+  filter: drop-shadow(0 18px 30px rgba(0,0,0,.3));
+}
