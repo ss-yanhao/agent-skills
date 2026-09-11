@@ -181,8 +181,25 @@ python3 ~/.workbuddy/skills/WeChat-to-xhs-cards/scripts/render.py \
 ### ⚙️ 运行要求
 
 - **macOS**，靠 Chrome headless 截图出图（会自动找 Chrome / Edge / Brave / Chromium）
-- **零第三方依赖** —— 只用 Python 标准库；中文字体走系统 PingFang SC，**断网也能跑**
+- **零第三方依赖** —— 只用 Python 标准库
+- **字体内置** —— 思源黑体 + 思源宋体（SIL OFL 1.1）随技能一起分发，
+  **断网也能跑**，换台机器字形也完全一致
 - 想改视觉（配色 / 字号 / 圆角）→ 只改 `assets/card.css`，不用碰脚本
+
+### ⚖️ 为什么字体要内置，而不是用系统的
+
+系统默认中文字体（macOS 的苹方 PingFang SC、Windows 的微软雅黑）都是**厂商商业字体** ——
+拿来出图做商用物料有侵权风险，而且换台机器字形就变了，同一个 spec 跑出两种效果。
+
+内置的思源黑体 / 思源宋体是 **SIL OFL 1.1**，协议正文明确允许"与任何软件捆绑再分发"
+（*bundled, redistributed and/or sold with any software*），所以可以合法进仓库。
+
+作为对比：阿里巴巴普惠体、MiSans、HarmonyOS Sans 虽然同样免费商用，但都是厂商自有协议，
+**明确禁止再分发字体文件** —— 装在自己机器上用没问题，但不能随开源技能分发，否则
+等于制造一个新的侵权。
+
+字体做了**子集化**：GB2312 全字 + ASCII + 常用标点 = 7556 字，单字重 10 MB → 约 1 MB，
+6 个字重合计约 6 MB。详见 [`assets/fonts/README.md`](./WeChat-to-xhs-cards/assets/fonts/README.md)。
 
 ### 🕳️ 踩过的坑（都内置处理了，改代码前先看）
 
@@ -194,6 +211,9 @@ python3 ~/.workbuddy/skills/WeChat-to-xhs-cards/scripts/render.py \
    否则第二次渲染必挂，且报错信息极具迷惑性。
 5. **文字块必须 `flex: 0 0 auto`** —— 给 `flex-shrink:1` 会让它自己压掉高度藏起内容，
    外层检测不到溢出，字号自适应永远不触发。这是本技能最容易误伤的地方。
+6. **不要在脚本里给页眉/页脚硬编码默认文案** —— 早先页脚右写死过一句占位符，
+   结果每张图都挂着与文章无关的废话，发出去就是废信息。现在改成 spec 的 `footnote`
+   字段，填了才渲染、不填整格不出现。任何"模板默认值"都别往脚本里塞。
 
 ---
 
@@ -212,6 +232,7 @@ agent-skills/
 │   ├── scripts/render.py          # 排版出图脚本（spec JSON → PNG）
 │   └── assets/
 │       ├── card.css               # 全部视觉样式（改视觉只改这个）
+│       ├── fonts/                 # 内置开源字体（思源黑体/宋体子集 + OFL 协议全文）
 │       ├── example-spec.json      # spec 示例
 │       └── preview-all.png        # README 里的案例总览图
 └── (新的技能直接加在顶层)
@@ -255,7 +276,11 @@ agent-skills/
 
 ## 📄 License
 
-MIT © 2025
+技能本体 **MIT** © 2025
+
+内置字体（`WeChat-to-xhs-cards/assets/fonts/`）采用 **SIL Open Font License 1.1**，
+版权归 Adobe / Google 所有，许可证全文随字体一同分发（`fonts/OFL.txt`）。
+字体文件不得单独出售（OFL 第 1 条）；随本仓库一起使用与再分发不受限制。
 
 ---
 

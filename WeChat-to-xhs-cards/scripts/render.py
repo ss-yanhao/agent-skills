@@ -78,16 +78,22 @@ def find_chrome():
 
 # ---------------------------------------------------------------- 页面模板
 
-def head_foot(kicker, source, page_no, total):
+def head_foot(kicker, source, page_no, total, footnote=""):
+    """页眉：左 kicker / 右 页码。页脚：左 source / 右 footnote。
+
+    footnote 由 spec 的 `footnote` 字段控制，**缺省就不渲染右侧那格** ——
+    技能不替用户预设页脚内容（曾硬编码过占位符，发出去就是废信息）。
+    """
     kicker_html = f'<span class="kicker">{esc(kicker)}</span>' if kicker else "<span></span>"
     pageno = f'<span class="pageno">{page_no:02d} / {total:02d}</span>'
     head = f'<div class="pg-head">{kicker_html}{pageno}</div>'
-    foot = f'<div class="pg-foot"><span>{esc(source)}</span><span>小红书 @笔记</span></div>' if source else ""
+    right = f'<span>{esc(footnote)}</span>' if footnote else ""
+    foot = f'<div class="pg-foot"><span>{esc(source)}</span>{right}</div>' if source else ""
     return head, foot
 
 
 def build_cover(card, ctx):
-    head, foot = head_foot(ctx["kicker"], ctx["source"], 1, ctx["total"])
+    head, foot = head_foot(ctx["kicker"], ctx["source"], 1, ctx["total"], ctx.get("footnote", ""))
     sub = f'<p class="cover-sub">{esc(card.get("subtitle",""))}</p>' if card.get("subtitle") else ""
     # 封面底部通栏图（话题标签已不再在图上渲染，这里改放推文封面图）
     img = (f'<img class="cover-img" src="{ctx["img"](card["img"])}" alt="">'
@@ -103,7 +109,7 @@ def build_cover(card, ctx):
 
 
 def build_points(card, ctx, i):
-    head, foot = head_foot(ctx["kicker"], ctx["source"], i, ctx["total"])
+    head, foot = head_foot(ctx["kicker"], ctx["source"], i, ctx["total"], ctx.get("footnote", ""))
     idx = card.get("index") or f"{i-1:02d}"
     title = f'<h2 class="card-title" data-fit="38:76:2">{esc(card.get("title",""))}</h2>' if card.get("title") else ""
     pts = "".join(f"<li>{esc(p)}</li>" for p in card.get("points", []))
@@ -120,7 +126,7 @@ def build_points(card, ctx, i):
 
 
 def build_quote(card, ctx, i):
-    head, foot = head_foot(ctx["kicker"], ctx["source"], i, ctx["total"])
+    head, foot = head_foot(ctx["kicker"], ctx["source"], i, ctx["total"], ctx.get("footnote", ""))
     by = f'<div class="by">— {esc(card.get("by",""))}</div>' if card.get("by") else ""
     return f"""{head}
 <div class="stage center">
@@ -132,7 +138,7 @@ def build_quote(card, ctx, i):
 
 
 def build_stat(card, ctx, i):
-    head, foot = head_foot(ctx["kicker"], ctx["source"], i, ctx["total"])
+    head, foot = head_foot(ctx["kicker"], ctx["source"], i, ctx["total"], ctx.get("footnote", ""))
     cells = "".join(
         f'<div><div class="stat-num">{esc(s.get("num",""))}</div>'
         f'<div class="stat-lab">{esc(s.get("label",""))}</div></div>'
@@ -148,7 +154,7 @@ def build_stat(card, ctx, i):
 
 
 def build_ending(card, ctx, i):
-    head, foot = head_foot(ctx["kicker"], ctx["source"], i, ctx["total"])
+    head, foot = head_foot(ctx["kicker"], ctx["source"], i, ctx["total"], ctx.get("footnote", ""))
     # 话题标签与 cta 文案都不再上图，腾出的空间改放一张收尾插画
     img = (f'<img class="end-float" src="{ctx["img"](card["img"])}" alt="">'
            if card.get("img") else "")
@@ -175,7 +181,7 @@ def build_product(card, ctx, i):
       prod_anchor           right（默认）| left
       prod_w / prod_x       产品图宽度（占画布宽 %）与距锚点边内缩（%）
     """
-    head, foot = head_foot(ctx["kicker"], ctx["source"], i, ctx["total"])
+    head, foot = head_foot(ctx["kicker"], ctx["source"], i, ctx["total"], ctx.get("footnote", ""))
     base = ctx["img"](card.get("base", ""))
     prod = ctx["img"](card.get("product", "")) if card.get("product") else ""
 
@@ -219,7 +225,7 @@ def build_image(card, ctx, i):
       top     —— 图上文下（默认）
       imgonly —— 只有图，铺满
     """
-    head, foot = head_foot(ctx["kicker"], ctx["source"], i, ctx["total"])
+    head, foot = head_foot(ctx["kicker"], ctx["source"], i, ctx["total"], ctx.get("footnote", ""))
     src = ctx["img"](card.get("img", ""))
     layout = card.get("layout", "top")
 
@@ -256,6 +262,7 @@ def build_pages(spec):
     ctx = {
         "kicker": spec.get("kicker", ""),
         "source": spec.get("source", ""),
+        "footnote": spec.get("footnote", ""),
         # HTML 在 out/html/ 下，图片统一放 out/images/，所以要多退一层
         "img": lambda name: "../images/" + os.path.basename(str(name)),
     }
@@ -430,6 +437,22 @@ def main():
             shutil.copy2(src, img_dir / src.name)
         print(f"已复制 {len(need)} 张配图 → {img_dir}")
 
+    # 内置字体复制到 out/fonts/ —— card.css 里的 @font-face 用 ../fonts/ 引用，
+    # 整个 out 目录因此可以独立搬走，换台机器出图也是同一套字形。
+    font_src = CSS_PATH.parent / "fonts"
+    if font_src.is_dir():
+        font_dir = out / "fonts"
+        if not font_dir.exists():
+            font_dir.mkdir(parents=True, exist_ok=True)
+        n_font = 0
+        for f in sorted(font_src.iterdir()):
+            if f.is_file() and f.suffix.lower() in (".woff2", ".txt", ".md"):
+                shutil.copy2(f, font_dir / f.name)
+                n_font += 1
+        print(f"已复制 {n_font} 个字体文件 → {font_dir}")
+    else:
+        sys.stderr.write(f"警告：没找到内置字体目录 {font_src}，出图会退回系统字体\n")
+
     written_html = []
     for name, label, inner in pages:
         p = html_dir / f"{name}.html"
@@ -463,7 +486,7 @@ def main():
     preview.write_text(f"""<!DOCTYPE html><html lang="zh-CN"><head><meta charset="utf-8">
 <title>小红书图片笔记预览</title>
 <style>
-body{{margin:0;padding:48px;background:#F2F2F5;font-family:-apple-system,"PingFang SC",sans-serif;
+body{{margin:0;padding:48px;background:#F2F2F5;font-family:system-ui,sans-serif;
 display:grid;grid-template-columns:repeat(auto-fill,minmax(320px,1fr));gap:32px}}
 figure{{margin:0}} img{{width:100%;border-radius:16px;box-shadow:0 12px 32px rgba(0,0,0,.14);display:block}}
 figcaption{{margin-top:12px;font-size:14px;color:#666;text-align:center}}

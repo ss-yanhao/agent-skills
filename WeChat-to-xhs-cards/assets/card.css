@@ -4,13 +4,55 @@
    三套主题：ink（极简编辑风·默认） / glass（液态玻璃） / bold（高饱和撞色）
    --------------------------------------------------------------- */
 
+/* ============ 内置字体 ============
+   Noto Sans SC（思源黑体）+ Noto Serif SC（思源宋体），均为 SIL OFL 1.1，
+   免费商用、允许捆绑再分发。这里放的是子集化后的 woff2（详见 fonts/README.md）。
+
+   路径是相对**输出目录的 html/** 写的（脚本把 CSS 内联进 out/html/*.html，
+   字体复制到 out/fonts/），所以是 ../fonts/ 而不是 fonts/。 */
+@font-face{
+  font-family: "Noto Sans SC Local";
+  src: url("../fonts/NotoSansSC-400.woff2") format("woff2");
+  font-weight: 400; font-style: normal; font-display: block;
+}
+@font-face{
+  font-family: "Noto Sans SC Local";
+  src: url("../fonts/NotoSansSC-500.woff2") format("woff2");
+  font-weight: 500; font-style: normal; font-display: block;
+}
+@font-face{
+  font-family: "Noto Sans SC Local";
+  src: url("../fonts/NotoSansSC-600.woff2") format("woff2");
+  font-weight: 600; font-style: normal; font-display: block;
+}
+@font-face{
+  font-family: "Noto Sans SC Local";
+  src: url("../fonts/NotoSansSC-700.woff2") format("woff2");
+  font-weight: 700; font-style: normal; font-display: block;
+}
+@font-face{
+  font-family: "Noto Sans SC Local";
+  src: url("../fonts/NotoSansSC-800.woff2") format("woff2");
+  font-weight: 800; font-style: normal; font-display: block;
+}
+@font-face{
+  font-family: "Noto Serif SC Local";
+  src: url("../fonts/NotoSerifSC-700.woff2") format("woff2");
+  font-weight: 700; font-style: normal; font-display: block;
+}
+
 :root{
   --pad-x: 88px;
   --pad-t: 76px;
   --pad-b: 56px;
-  --font: -apple-system, BlinkMacSystemFont, "PingFang SC", "Noto Sans SC",
-          "Microsoft YaHei", "Hiragino Sans GB", sans-serif;
-  --mono: ui-monospace, "SF Mono", "JetBrains Mono", Menlo, monospace;
+  /* 内置思源黑体优先。后面几个只做子集外的生僻字兜底 ——
+     字体没装的机器会落到 sans-serif，但常用字一律走内置字体，
+     所以不同机器出图结果一致。 */
+  --font: "Noto Sans SC Local", "Source Han Sans SC", "Noto Sans SC",
+          "PingFang SC", "Microsoft YaHei", "Hiragino Sans GB", sans-serif;
+  /* 等宽只用在页码和页眉小标签的数字上，内置字体打头保证数字字形统一 */
+  --mono: "Noto Sans SC Local", ui-monospace, Menlo, Consolas, monospace;
+  --serif: "Noto Serif SC Local", "Source Han Serif SC", serif;
 }
 
 * { box-sizing: border-box; margin: 0; padding: 0; }
@@ -199,7 +241,7 @@ ul.points li::before{
 /* ============ 金句页 ============ */
 
 .quote-mark{
-  font-family: Georgia, "Times New Roman", "Songti SC", serif;
+  font-family: var(--serif);
   font-size: 190px; line-height: .72; font-weight: 700;
   color: var(--accent); margin-bottom: 24px;
 }
