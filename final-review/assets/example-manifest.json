@@ -1,0 +1,40 @@
+{
+  "title": "我的产物审阅件（示例）",
+  "defaultBatch": "batch-current",
+  "batches": [
+    {
+      "id": "batch-current",
+      "label": "本轮交付",
+      "default": true,
+      "root": "/你的/项目/目录",
+      "files": [
+        {
+          "src": "moments-copy.md",
+          "docid": "m1",
+          "title": "朋友圈文案 · 终稿",
+          "realpath": "/你的/项目/目录/moments-copy.md"
+        },
+        {
+          "src": "cover.png",
+          "docid": "m2",
+          "title": "主视觉配图",
+          "realpath": "/你的/项目/目录/cover.png"
+        }
+      ]
+    },
+    {
+      "id": "batch-prev",
+      "label": "上一轮（默认折叠）",
+      "default": false,
+      "root": "/你的/项目/目录/prev",
+      "files": [
+        {
+          "src": "rule.md",
+          "docid": "p1",
+          "title": "规则文件",
+          "realpath": "/你的/项目/目录/prev/rule.md"
+        }
+      ]
+    }
+  ]
+}

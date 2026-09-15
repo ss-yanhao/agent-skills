@@ -2,7 +2,7 @@
 
 > 给 AI 用的技能库 —— 每个目录一个技能，复制过去就能用，零构建零依赖。
 
-![Skills](https://img.shields.io/badge/skills-2-blue)
+![Skills](https://img.shields.io/badge/skills-3-blue)
 ![License](https://img.shields.io/badge/license-MIT-green)
 ![Platform](https://img.shields.io/badge/platform-WorkBuddy-orange)
 
@@ -14,6 +14,7 @@
 |------|--------|-------------|:----:|
 | 📖 [**moments-copy**](./moments-copy/) | 海报 → 朋友圈文案 | 一张海报 + 参考资料 → 三版互斥文案 + 配图与发布建议 | ✅ |
 | 🖼️ [**WeChat-to-xhs-cards**](./WeChat-to-xhs-cards/) | 推文 → 小红书图文 | 一篇公众号文章 → 一组 3:4 竖版 PNG + 一份文字稿 | — |
+| 🔍 [**final-review**](./final-review/) | AI 产物 → 审阅件 | 一批 AI 产物清单 → 可圈点批注的离线审阅 HTML + 意见 JSON | — |
 
 ---
 
@@ -214,6 +215,35 @@ python3 ~/.workbuddy/skills/WeChat-to-xhs-cards/scripts/render.py \
 6. **不要在脚本里给页眉/页脚硬编码默认文案** —— 早先页脚右写死过一句占位符，
    结果每张图都挂着与文章无关的废话，发出去就是废信息。现在改成 spec 的 `footnote`
    字段，填了才渲染、不填整格不出现。任何"模板默认值"都别往脚本里塞。
+
+---
+
+## 🔍 final-review · 一键审阅 AI 产物
+
+> 把模型交付你的一批「最终产物」收进一个单文件 HTML，你在浏览器里选中文字就能批注、在图上拖框就能圈注，点一下导出固定文件名 `review-comments.json`，主理人据此逐条帮你改。
+
+**什么时候用** — 一轮拿到一堆文件（推文 / 朋友圈文案 / 小红书文案 / 配图 / 规则 md），看完要逐条反馈、且反馈要和被审内容绑定时。
+
+### ✨ 它解决什么
+
+- 标注和原文绑定（自动记录「谁、哪段、什么意见」），导出结构化意见清单，回收时主理人按图索骥，不用来回问
+- 产物 = 最终交付物，不是过程文件：让你写文案，文案本身就是产物；生成它的脚本 / `pipeline.json` / QA 报告都不放进审阅件
+
+### 🎯 输入 → 输出
+
+| 项目 | 说明 |
+|------|------|
+| **输入** | 一份 `manifest.json`：列出要审阅的批次与文件（支持 md / 代码 / 图片） |
+| **输出** | 一个自包含、可离线打开的 `review.html`：选中文字批注 / 图片拖框圈注 / 一键导出 `review-comments.json` |
+| **回收** | 把 json 交回主理人，逐条定位 `realpath` 修改并回执 |
+
+### 🔧 用法
+
+```bash
+python final-review/gen_review.py --manifest manifest.json --out review.html
+```
+
+详细格式与回收循环见 [final-review/README.md](./final-review/README.md)。
 
 ---
 
